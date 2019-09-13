@@ -7,18 +7,18 @@
 - [Описание протокола передачи в локальной сети КУВТ](http://www.sensi.org/~tnt23/msx/index.html)
 
 ### Синтаксис 
-`msx-link [-p ComPortNum] [-s StudentNo] [-<key>...] [_<command>...]  [file1] [file2] [...fileN]`
+`msx-link [-p №ПоследовательногоПорта ] [-s №Студента] [-<ключ>…] [_<команда>…]  [файл1] [файл2] […файлN]`
 
-[file1] [file2] [...fileN] - files for binary send (auto supported formats: BAS, BIN, ROM[8|16|32])
+`[файл1] [файл2] […файлN]` — бинарные файлы (автоматически поддерживаются форматы BAS, BIN, ROM[8|16|32])
 
--key(s) :
-- p `<C>`  : Connect to COM-port number `<C>`,     default value  1
-- s `<S>`  : Work with 'Student' number `<S>`, default value `-1`
-  - -1  to all
-  - 0  - to 'Teacher'                             (for <-T>est mode)
-  - 1-15  - to `<S>`tudent number
-- c <cmd>        : Send Basic-command <cmd> to `<S>`tudent(s) (37 symbols limit) [like '_SNDCMD  <cmd> ']
-- m <msg>        : Send message <msg> to `<S>`tudent(s)       (56 symbols limit) [like '_MESSAGE <msg> ']
+-ключ(и) :
+- p 1  : Соединиться с портом № 1, значение по умолчанию 1
+- s 2  : Работать с "студентом" № 2, значение по умолчанию -1
+  - -1 : всем
+  - 0  : "учителю" (для режима <-T>est)
+  - 1-15 : диапазону "студентов"
+- c <команда>    : Отправить команду на BASIC "студенту" (максимально 37 символов) [аналогично '_SNDCMD  <cmd> ']
+- m <сообщение>  : Send message <msg> to `<S>`tudent(s)       (56 symbols limit) [like '_MESSAGE <msg> ']
 - C              : Send '_cpm' to `<S>`tudent(s) for switching into CPM OS
 - S              : Send file(s) to CPM net-disk             (should be use with|after -C key)
 - T              : Test mode - dump&reply                   (RX & TX lines should swapped!)
