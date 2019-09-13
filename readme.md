@@ -9,7 +9,7 @@
 ### Синтаксис 
 `msx-link [-p ComPortNum] [-s StudentNo] [-<key>...] [_<command>...]  [file1] [file2] [...fileN]`
 
-`[file1] [file2] [...fileN]` - files for binary send (auto supported formats: BAS, BIN, ROM[8|16|32])
+[file1] [file2] [...fileN] - files for binary send (auto supported formats: BAS, BIN, ROM[8|16|32])
 
 -key(s) :
 - p `<C>`  : Connect to COM-port number `<C>`,     default value  1
