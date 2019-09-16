@@ -176,6 +176,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\MsxIpPort.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\MsxSerialPort.cpp"
 				>
 			</File>
@@ -207,6 +211,10 @@
 			>
 			<File
 				RelativePath=".\commands.h"
+				>
+			</File>
+			<File
+				RelativePath=".\MsxIpPort.h"
 				>
 			</File>
 			<File

@@ -21,13 +21,16 @@ class MsxSerialPort
 {
 private:
     HANDLE handler;
-    bool connected;
     COMSTAT status;
     DWORD errors;
+
+protected:
+    bool connected;
 
 public:
     MsxSerialPort();
     MsxSerialPort(int portNum);
+//    MsxSerialPort(int portNum,  const char *host = "com");
     ~MsxSerialPort();
 
     virtual bool open(int portNum);

@@ -14,6 +14,11 @@ MsxSerialPort::MsxSerialPort(int portNum) : connected(false)
 	open( portNum );
 }
 
+//MsxSerialPort::MsxSerialPort(int portNum,  const char *host) : connected(false)
+//{
+//	open( portNum );
+//}
+
 //port open, set connected
 bool MsxSerialPort::open(int portNum)
 {

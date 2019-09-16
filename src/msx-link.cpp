@@ -10,7 +10,8 @@
 #include <assert.h>
 #include <sys/stat.h>
 
-#include "MsxSerialPort.h"
+//#include "MsxSerialPort.h"
+#include "MsxIpPort.h"
 #include "commands.h"
 
 #define SIZE16K 16384
@@ -87,7 +88,8 @@ class MSXhandle
 	string txbuf;
 	long unsigned ERRno;
 
-	MsxSerialPort msx;
+	MsxSerialPort *msx;
+//	MsxIpPort msx;
 
 	struct xData
 	{
@@ -153,10 +155,17 @@ public:
 		init(port);
 	}
 
-	void init( int port )
+	MSXhandle( const char *host, int port, int stNo, int verb ) : teacher(true), studentNo(stNo), verbose(verb)
+	{
+		init(port,host);
+	}
+
+	void init( int port, const char *host = NULL )
 	{
 		ERRno = 0;
-		if(!msx.open( port ))
+		msx = host ? new MsxIpPort( port, host ) : new MsxSerialPort( port );
+//		if(!msx.open( port, host ))
+		if(!msx->isConnected())
 		{
 			ERRno = Init_ERR;
 			exit(1);
@@ -168,7 +177,8 @@ public:
 
 	~MSXhandle()
 	{
-		msx.close();
+//		msx.close();
+		delete msx;
 	}
 
 	void setStudentNo( int N )
@@ -185,7 +195,7 @@ public:
 	{
 		bool verb = verbose && (buf[3] != PONG || verbose > 1);
 		if( verb ) printf("Write %d bytes\n", size);
-		bool fSuccess = msx.write((char *)buf, size, verb );
+		bool fSuccess = msx->write((char *)buf, size, verb );
 		if( verb ) puts("");
 		if( !fSuccess )
 		{
@@ -252,7 +262,7 @@ public:
 
 		if(size < 5)
 		{
-			if( verbose ){ if( size > 1 ) printf("Wrong packet read[%d]: ",size); msx.dump(buf, size); puts("");}
+			if( verbose ){ if( size > 1 ) printf("Wrong packet read[%d]: ",size); msx->dump(buf, size); puts("");}
 			return false;
 		}
 		// Header
@@ -264,7 +274,7 @@ public:
 			if(( teacher ? src != studentNo : dst != studentNo ))
 				return false;
 			bool verb = verbose && buf[3] != PING;
-			if( verb || verbose > 2 ) msx.dump(buf, size, "read[%d]: ", true);
+			if( verb || verbose > 2 ) msx->dump(buf, size, "read[%d]: ", true);
 			unsigned int word;
 			char *msg = NULL;
 			switch( buf[3] )
@@ -323,11 +333,11 @@ public:
 		{
 			int n = 0, err = 0;
 //			for(int j = 5; j-- && !(n = msx.read((char *)&buf[i], sizeof(buf)-i)); Sleep( delay ));
-			for(int j = 5; j-- && !(n = msx.read((char *)&buf[i], 1)); /*Sleep( delay )*/);
+			for(int j = 5; j-- && !(n = msx->read((char *)&buf[i], 1, verbose > 2)); /*Sleep( delay )*/);
 			if(!n && (err = GetLastError()))
 			{
 				printf("WaitRx error %d (%d bytes read)\n",GetLastError(),i);
-				msx.dump( buf, i+1, NULL, true );
+				msx->dump( buf, i+1, NULL, true );
 				ERRno = Read_ERR | WaitRx_ERR;
 				return false;
 			}
@@ -382,7 +392,7 @@ public:
 		setWord( &hdr[7], start );
 		setWord( &hdr[11], end );
 
-	    if( verbose ) msx.dump( hdr, sizeof(hdr), "\nHeader: ", true);
+	    if( verbose ) msx->dump( hdr, sizeof(hdr), "\nHeader: ", true);
 
 		if(!write_wait( hdr, sizeof(hdr), "SendHeader"))
 		{
@@ -452,27 +462,39 @@ public:
 		txbuf.append((char*)tail, sizeof(tail));
 	}
 
-	bool SendBasFile( FILE *infile, int size )
+	bool SetBasSize( unsigned int size )
 	{
-		unsigned char buf[MAX_MESS_LEN];
-		unsigned short len;
-		
-		for(int pkt=0, cur=0; !feof(infile); pkt++)
-		{
-			if(!(len = fread(buf, 1, sizeof(buf), infile)))
-				break;
-			cur += len;
-
-			if(!SendBuf( buf, len, (pkt ? SEND_BAS_NEXT : SEND_BAS_HEAD), cur < size ))
-				return false;
-
-			if( verbose )
-				printf("\nSent pkt No.%d", pkt);
-			else
-				printProgress( pkt );
-		}
-		return true;
+		size += 0x8000;
+		if(Poke( 0xF6C2, size % 0x100 ) && Poke( 0xF6C3, size / 0x100 ))
+			return true;
+		puts("set size error");
+		return false;
 	}
+
+	//bool SendBasFile( FILE *infile, int size )
+	//{
+	//	unsigned char buf[MAXBLKSIZE];
+	//	unsigned short len;
+	//	//an obscure header of the second packet
+	//	//00 52 01 00 00 28 00 00
+	//	//   52    80    28    00
+
+	//	for(int pkt=0, cur=0; !feof(infile); pkt++)
+	//	{
+	//		if(!(len = fread(buf, 1, sizeof(buf), infile)))
+	//			break;
+	//		cur += len;
+
+	//		if(!SendBuf( buf, len, (pkt ? SEND_BAS_NEXT : SEND_BAS_HEAD), cur < size ))
+	//			return false;
+
+	//		if( verbose )
+	//			printf("\nSent pkt No.%d", pkt);
+	//		else
+	//			printProgress( pkt );
+	//	}
+	//	return SetBasSize( size );	//Basic set wrong length=size+1
+	//}
 
 	bool SendBuf( unsigned char *buf, unsigned short int len, unsigned char cmd = SEND_HEX, bool intermidiate = false )
 	{
@@ -484,7 +506,7 @@ public:
 
 	    if (verbose)
 	    {
-			msx.dump( hdr, sizeof(hdr), "\nHeader: ");
+			msx->dump( hdr, sizeof(hdr), "\nHeader: ");
 			printf ("\nData: ");
 		}
 
@@ -640,14 +662,14 @@ public:
 		setSrcDst( hdr );
 		setWord( &hdr[7], row );
 
-		if( verbose ) msx.dump( hdr, sizeof(hdr), "\nHeader: ", true);
+		if( verbose ) msx->dump( hdr, sizeof(hdr), "\nHeader: ", true);
 		return write_wait( hdr, sizeof(hdr), "RUN command");
 	}
 
 	bool Run( unsigned short run, const char *runstr = runcom )
 	{
-		char string[MAX_COMM_LEN+1];	//ðàçìåð ñòðîêè íå äîëæåí áûòü ïðåâûøåí
-		sprintf(string, runstr, run);				//ðàçìåð ñòðîêè íå èçìåíèòñÿ
+		char string[MAX_COMM_LEN+1];	//Ñ€Ð°Ð·Ð¼ÐµÑ€ ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð½Ðµ Ð´Ð¾Ð»Ð¶ÐµÐ½ Ð±Ñ‹Ñ‚ÑŒ Ð¿Ñ€ÐµÐ²Ñ‹ÑˆÐµÐ½
+		sprintf(string, runstr, run);				//Ñ€Ð°Ð·Ð¼ÐµÑ€ ÑÑ‚Ñ€Ð¾ÐºÐ¸ Ð½Ðµ Ð¸Ð·Ð¼ÐµÐ½Ð¸Ñ‚ÑÑ
 		printf("Run command: '%s'\n", string);
 		return SendCommand( string );
 	}
@@ -665,7 +687,7 @@ public:
 			return false;
 		}
 		setWord( &hdr[7], len );
-		if( verbose ) msx.dump( hdr, sizeof(hdr), "\nHeader: ", true );
+		if( verbose ) msx->dump( hdr, sizeof(hdr), "\nHeader: ", true );
 		setHeader(hdr, sizeof(hdr));
 		addBufEnd((unsigned char *)cmd, len );
 		return write_wait( msg );
@@ -689,7 +711,7 @@ public:
 		setSrcDst( poke );
 		setWord( &poke[7], addr );
 		setByte( &poke[11], byte );
-		if( verbose ) {printf ("\nPoke &H%04x, %.2x : ", addr, byte); msx.dump( poke, sizeof(poke), NULL, true);}
+		if( verbose ) {printf ("\nPoke &H%04x, %.2x : ", addr, byte); msx->dump( poke, sizeof(poke), NULL, true);}
 		return write_wait(poke, sizeof(poke), "<poke>");
 	}
 
@@ -784,7 +806,8 @@ int main(int argc, char **argv)
 	char *fileNamePointer[256] = {NULL},
 		 *command = NULL,
 		 *message = NULL,
-		 *recvFile = NULL;
+		 *recvFile = NULL,
+		 *host = NULL;
 	int filesNumber = 0;
 
 	for(int i=0; ++i<argc && !err; ind=false)
@@ -794,11 +817,11 @@ int main(int argc, char **argv)
 		{
 		case 'p':										//-p comN
 				port = atoi(argv[i]);
-				if(port < 1 || port >99)
-				{
-					puts("COM-port number value: 1 - 99");
-					return 1;
-				}
+				//if(port < 1 || port >99)
+				//{
+				//	puts("COM-port number value: 1 - 99");
+				//	return 1;
+				//}
 				break;
 		case 's':										//-s studentNo
 				studentNo = atoi(argv[i]);
@@ -835,6 +858,9 @@ int main(int argc, char **argv)
 		case 'm':										//-m xxx === _MESSAGE xxx
 				message = argv[i];
 				break;
+		case 'i':										//-i host
+				host = argv[i];
+				break;
 		default:
 				err = true;
 		}
@@ -855,9 +881,9 @@ int main(int argc, char **argv)
 			else
 			if( _stricmp(argv[i],"_run") == 0 )		//_RUN xxx || _run xxx
 				callRun = i+1 < argc && isxdigit(*argv[i+1]) ? atoi(argv[++i]) : 0xFFFF;
-			else
-			if( _stricmp(argv[i],"_send") == 0 )			//_SEND || _send
-				sendBas = true;
+			//else
+			//if( _stricmp(argv[i],"_send") == 0 )			//_SEND || _send
+			//	sendBas = true;
 			else
 			if( _stricmp(argv[i],"_recv") == 0 )		//_RECV xxx || _recv xxx
 				recvFile = i+1 < argc ? argv[++i] : NULL;
@@ -870,13 +896,14 @@ int main(int argc, char **argv)
     if(err || argc <= 1)
     {
             printf("\n\
-  MSX-Link v1.0.20190912,  Copyright (c) 2019,   <<Aoidsoft>> Co. (adu@aoidsoft.com)\n\
+  MSX-Link v1.1.20190916,  Copyright (c) 2019,   <<Aoidsoft>> Co. (adu@aoidsoft.com)\n\
   Command line utility for the Main-computer functions in a local network KYBT2(MSX2ru):\n\
                                                                                    PC  <--->>>  KYBT2(MSX2ru)\n\
-  Usage:  msx-link.exe [-p ComPortNum] [-s StudentNo] [-<key>...] [_<command>...]  [file1] [file2] [...fileN]\n\
+  Usage:  msx-link.exe [-p <Com|Port>Num] [-s StudentNo] [-<key>...] [_<command>...]  [file1] [file2] [...fileN]\n\
         [file1] [file2] [...fileN] - files for binary send (auto supported formats: BAS, BIN, ROM[8|16|32])\n\
     -key(s):\n\
-        p <C>  : Connect to COM-port number <C>,                  default value  1\n\
+        i <hst>: Ethernet address of the Host-gate to MSX-net,    no default\n\
+        p <C>  : Connect to COM|IP-port number <C>,               default value  1 (treat as IP-port whith -i)\n\
         s <S>  : Work with 'Student' number <S>,                  default value -1:\n\
                    -1  - to all\n\
                     0  - to 'Teacher'                             (for <-T>est mode)\n\
@@ -889,7 +916,6 @@ int main(int argc, char **argv)
         v [0-2]        : Verbose mode with selected logging lvl,  default value 0\n\
         h|H|?          : This help\n\
     _command(s):\n\
-        _send   <file> : Send Basic-file to <S>tudent(s) (file must be MSX Basic fmt)[like '_SEND    <file>']\n\
         _recv   <file> : Recv Basic-program from <S>tudent into the <file>           [like '_RECEIVE <file>']\n\
         _run    [rowN] : Run  Basic-program on <S>tudent(s) with optional start rowN [like '_RUN     <rowN>']\n\
         _stop          : Stop Basic-program on <S>tudent(s)                          [like '_STOP'          ]\n\
@@ -899,6 +925,7 @@ int main(int argc, char **argv)
 \n\
   Example:\n\
 %s -p 0 -m \"Hi all!\"\n"
+//        _send   <file> : Send Basic-file to <S>tudent(s) (file must be MSX Basic fmt)[like '_SEND    <file>']\n
 ,argv[0]);
             return 1;
     }
@@ -910,7 +937,7 @@ int main(int argc, char **argv)
 	}
 	printf("COM-port: %d, student No.%d\n", port, studentNo);
 
-	MSXhandle msxh( port, studentNo, verbose );
+	MSXhandle msxh( host, port, studentNo, verbose );
 
 	if( testRead )
 	{
@@ -980,16 +1007,16 @@ int main(int argc, char **argv)
 
 		fread( &ch, 1, 1, infile );	//read the first byte that can contain the file type
 
-		if( sendBas )					// --- Use special routine for sending Basic-file in the internal format ---
-		{
-			if(!msxh.SendBasFile( infile, stat_p.st_size - 1 ))
-			{
-				printf("Send basic file<%s> error\n",fileNamePointer[fileIdx]);
-				return 1;
-			}
-			printf("Send basic file<%s> complete\n",fileNamePointer[fileIdx]);
-			break;
-		}
+		//if( sendBas )					// --- Use special routine for sending Basic-file in the internal format ---
+		//{
+		//	if(!msxh.SendBasFile( infile, stat_p.st_size - 1 ))
+		//	{
+		//		printf("Send basic file<%s> error\n",fileNamePointer[fileIdx]);
+		//		return 1;
+		//	}
+		//	printf("Send basic file<%s> complete\n",fileNamePointer[fileIdx]);
+		//	break;
+		//}
 
 		if( ch == 0xfe )				//                 --- BINARY FILE ---
 		{
@@ -1025,13 +1052,14 @@ int main(int argc, char **argv)
 
 			start = 0x8000;
 			end = start + basSize - 1;
-			printf( "\nFile: %s; Start: %x, End: %x", fileNamePointer[fileIdx], start, end );
+			printf( "\nFile: %s; Start: %x, End: %x", fileNamePointer[fileIdx], start+1, end );
 			if( !msxh.Send( binBuf, start, end ))
 			{
 				puts("transmit error");
 				break;
 			}
-			if(!(msxh.Poke( 0xF6C2, end % 0x100 ) && msxh.Poke( 0xF6C3, end / 0x100 )))
+			//if(!(msxh.Poke( 0xF6C2, end % 0x100 ) && msxh.Poke( 0xF6C3, end / 0x100 )))
+			if(!msxh.SetBasSize( basSize-1 ))
 			{
 				puts("set size error");
 				break;

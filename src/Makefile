@@ -1,2 +1,2 @@
-msx-link: msx-link.cpp MsxSerialPort.cpp
-	g++ -o msx-link msx-link.cpp MsxSerialPort.cpp
+msx-link: msx-link.cpp MsxSerialPort.cpp MsxIpPort.cpp
+	g++ -o msx-link msx-link.cpp MsxSerialPort.cpp MsxIpPort.cpp
