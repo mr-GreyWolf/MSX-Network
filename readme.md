@@ -49,6 +49,7 @@
 #### Пример 
 `msx-link -p 0 -m "Hi all!"`
 
+
 <a name="scheme"></a>
 ## Схема шлюза
 ![Схема](scheme/msx-link.png)
