@@ -53,3 +53,5 @@
 <a name="scheme"></a>
 ## Схема шлюза
 ![Схема](scheme/msx-link.png)
+
+## [Настройка HLK-RM04](https://github.com/mr-GreyWolf/MSX-Link/tree/master/HLK-RM04)
