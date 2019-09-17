@@ -801,7 +801,7 @@ int main(int argc, char **argv)
 {
 	int port = 1, studentNo = -1;
 	int verbose = 0;
-	bool err = false, ind, sendFile = false, callCpm = false, testRead = false, callStop = false, sendBas = false;
+	bool err = false, ind, sendFile = false, callCpm = false, testRead = false, callStop = false, sendBas = false, poll = false;
 	int callRun = -1;
 	char *fileNamePointer[256] = {NULL},
 		 *command = NULL,
@@ -855,6 +855,10 @@ int main(int argc, char **argv)
 				i--;
 				testRead = true;
 				break;
+		case 'P':										//-P - send "7" in a circle
+				i--;
+				poll = true;
+				break;
 		case 'm':										//-m xxx === _MESSAGE xxx
 				message = argv[i];
 				break;
@@ -874,7 +878,7 @@ int main(int argc, char **argv)
 				callCpm = true;
 			else
 			if( _stricmp(argv[i],"_message") == 0 )		//_MESSAGE xxx || _message xxx
-				command = argv[++i];
+				message = argv[++i];
 			else
 			if( _stricmp(argv[i],"_stop") == 0 )			//_STOP || _stop
 				callStop = true;
@@ -896,7 +900,7 @@ int main(int argc, char **argv)
     if(err || argc <= 1)
     {
             printf("\n\
-  MSX-Link v1.1.20190916,  Copyright (c) 2019,   <<Aoidsoft>> Co. (adu@aoidsoft.com)\n\
+  MSX-Link v1.2.20190917,  Copyright (c) 2019,   <<Aoidsoft>> Co. (adu@aoidsoft.com)\n\
   Command line utility for the Main-computer functions in a local network KYBT2(MSX2ru):\n\
                                                                                    PC  <--->>>  KYBT2(MSX2ru)\n\
   Usage:  msx-link.exe [-p <Com|Port>Num] [-s StudentNo] [-<key>...] [_<command>...]  [file1] [file2] [...fileN]\n\
@@ -913,6 +917,7 @@ int main(int argc, char **argv)
         C              : Send '_cpm' to <S>tudent(s) for switching into CPM OS\n\
         S              : Send file(s) to CPM net-disk             (should be use with|after -C key)\n\
         T              : Test mode - dump&reply                   (RX & TX lines should swapped!)\n\
+        P              : Line test - send \"7\" in a circle\n\
         v [0-2]        : Verbose mode with selected logging lvl,  default value 0\n\
         h|H|?          : This help\n\
     _command(s):\n\
@@ -939,6 +944,12 @@ int main(int argc, char **argv)
 
 	MSXhandle msxh( host, port, studentNo, verbose );
 
+	if( poll )
+	{
+		for(; msxh.write((const unsigned char *)"7", 1); Sleep(1));
+		return 0;
+	}
+
 	if( testRead )
 	{
 		msxh.setTeacher( false );
@@ -947,6 +958,14 @@ int main(int argc, char **argv)
 			Sleep(1);
 		}
 		puts("Failed");
+		return 1;
+	}
+
+	if(msxh.Ping())
+		printf("Client%s ready\n",s);
+	else
+	{
+		printf("Client%s not ready\n",s);
 		return 1;
 	}
 
@@ -965,14 +984,6 @@ int main(int argc, char **argv)
 	{
 		msxh.SendCommand( "_cpm" );
 		Sleep( 2000 );
-	}
-
-	if(msxh.Ping())
-		printf("Client%s ready\n",s);
-	else
-	{
-		printf("Client%s not ready\n",s);
-		return 1;
 	}
 
 	if( message )
