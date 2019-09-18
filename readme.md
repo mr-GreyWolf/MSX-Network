@@ -2,8 +2,14 @@
 
 Организация сети между ПК и MSX c использованием технологии **Yamaha Локальная сеть, версия 3.0**. Подробнее о технологии [здесь](https://sysadminmosaic.ru/msx/yamaha_local_network).
 
+## Описание
+- **MSX-Link** — Программа которая запускается на ПК, эта программа берёт на себя роль "учителя" (№ 0 в сети)
+- **MSX-Link-Gateway** — Шлюз между ПК с программой **MSX-Link** и сетью "студентов", схема [здесь](#gateway).
+- **Сеть "студентов"** — сеть ученических машин:
+![Гирлянда](scheme/garland.gif)
+  
 За основу проекта взяты материалы их этих источников:
-- [Сборка MSX-Link и его использование](http://cax.narod.ru/msx/msx-link/index.html)
+- [Сборка MSX-Link и его использование](http://cax.narod.ru/msx/msx-link/index.html), [Оригинал изображения "гирлянда"](http://cax.narod.ru/msx/msx-link/img/other/garland.gif)
 - [Описание протокола передачи в локальной сети КУВТ](http://www.sensi.org/~tnt23/msx/index.html)
 
 ## Возможности программы
@@ -12,7 +18,7 @@
 - Приём программ на BASIC
 - Отправка команд на BASIC
 - Отправка сообщений
-- Подключение ПК к шлюзу по USB или по Ethernet/Wi-Fi, смотри [схему](#scheme)
+- Подключение ПК к шлюзу по USB или по Ethernet/Wi-Fi, смотри [схему](#gateway)
 
 ## Синтаксис 
 `msx-link [-p №ПоследовательногоПорта ] [-s №Студента] [-<ключ>…] [_<команда>…]  [файл1] [файл2] […файлN]`
@@ -50,7 +56,7 @@
 `msx-link -p 0 -m "Hi all!"`
 
 
-<a name="scheme"></a>
+<a name="gateway"></a>
 ## Схема шлюза
 ![Схема](scheme/msx-link-gateway.png)
 ### [Архив схемы в KiCad](https://github.com/mr-GreyWolf/MSX-Link/blob/master/scheme/MSX-Link-Gateway.zip)
