@@ -53,5 +53,6 @@
 <a name="scheme"></a>
 ## Схема шлюза
 ![Схема](scheme/msx-link-gateway.png)
+### [Архив схемы в KiCad](https://github.com/mr-GreyWolf/MSX-Link/blob/master/scheme/MSX-Link-Gateway.zip)
 
 ## [Настройка HLK-RM04](https://github.com/mr-GreyWolf/MSX-Link/tree/master/HLK-RM04)
