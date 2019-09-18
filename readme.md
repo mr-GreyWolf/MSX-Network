@@ -9,7 +9,7 @@
 ![Гирлянда](scheme/garland.gif)
   
 За основу проекта взяты материалы их этих источников:
-- [Сборка MSX-Link и его использование](http://cax.narod.ru/msx/msx-link/index.html), [Оригинал изображения "гирлянда"](http://cax.narod.ru/msx/msx-link/img/other/garland.gif)
+- [Сборка MSX-Link и его использование](http://cax.narod.ru/msx/msx-link/index.html), [оригинал изображения "гирлянда"](http://cax.narod.ru/msx/msx-link/img/other/garland.gif)
 - [Описание протокола передачи в локальной сети КУВТ](http://www.sensi.org/~tnt23/msx/index.html)
 
 ## Возможности программы
