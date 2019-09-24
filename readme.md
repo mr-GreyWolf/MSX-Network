@@ -1,4 +1,4 @@
-# MSX-Link
+# MSX-Network
 
 Организация сети между ПК и MSX c использованием технологии **Yamaha Локальная сеть, версия 3.0**. Подробнее о технологии [здесь](https://sysadminmosaic.ru/msx/yamaha_local_network).
 
